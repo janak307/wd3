@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Socialite;
-
+use Google_Service_PhotosLibrary;
 use App\User;
 
 
@@ -48,11 +48,20 @@ class LoginController extends Controller
      */
     public function redirectToProvider($provider)
     {
-        // return Socialite::driver($provider)
-        // ->scopes(['openid', 'profile', 'email', Google_Service_People::CONTACTS_READONLY, 'https://www.googleapis.com/auth/photoslibrary.readonly'])
-        // ->redirect();
+        return Socialite::driver($provider)
+        ->scopes([
+            'openid', 
+            'profile', 
+            'email',
+            'https://www.googleapis.com/auth/photoslibrary.readonly', 
+            Google_Service_PhotosLibrary::DRIVE_PHOTOS_READONLY,
+            Google_Service_PhotosLibrary::PHOTOSLIBRARY,
+            Google_Service_PhotosLibrary::PHOTOSLIBRARY_READONLY,
+            Google_Service_PhotosLibrary::PHOTOSLIBRARY_SHARING
+        ])
+        ->redirect();
 
-        return Socialite::driver($provider)->redirect();
+        // return Socialite::driver($provider)->redirect();
     }
 
     /**
@@ -81,17 +90,29 @@ class LoginController extends Controller
      */
     public function findOrCreateUser($user, $provider)
     {   
-        // dd($user);
         $authUser = User::where('provider_id', $user->id)->first();
         if ($authUser) {
+
+
+            $authUser->provider = $provider;
+            $authUser->provider_id = $user->id;
+            $authUser->provider_token = $user->token;
+            $authUser->refresh_token = $user->accessTokenResponseBody['access_token'];
+            $authUser->expires_in = $user->accessTokenResponseBody['expires_in'];
+
+            $authUser->save();
+
             return $authUser;
         }
+
         return User::create([
             'name'     => $user->name,
             'email'    => $user->email,
             'provider' => $provider,
             'provider_id' => $user->id,
-            'provider_token' => $user->token
+            'provider_token' => $user->token,
+            'refresh_token' => $user->accessTokenResponseBody['access_token'],
+            'expires_in' => $user->accessTokenResponseBody['expires_in']
         ]);
     }
 }

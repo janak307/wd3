@@ -17,7 +17,9 @@ Route::get('/', function () {
 Route::get('/google', function () {
     return Socialite::with('google')->redirect();
 });
-Route::get('/gallery', 'GalleryController@show');
+Route::get('/gallery/', 'GalleryController@show');
+Route::get('/gallery/{albumId}', 'GalleryController@show');
+Route::get('/gallery/{albumId}/{nextPage}', 'GalleryController@show');
 
 Route::get('login/{provider}', 'Auth\LoginController@redirectToProvider');
 Route::get('login/{provider}/callback', 'Auth\LoginController@handleProviderCallback');
